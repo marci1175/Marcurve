@@ -95,13 +95,12 @@ impl eframe::App for TemplateApp {
                 .show(ui, |plot_ui| {
                     if let Some(vector) = self.equation_vec.clone() {
                         for item in 0..vector.len() - 1 {
-                            let line_points: PlotPoints = (vector[item + 1] as i64 ..=vector[item] as i64).map(|i| {
-                                let t = remap(i as f64, 0.0..=(vector[item]), 0.0..=(vector[item + 1]));
-                                [
-                                    item as f64 - (self.calc_cycles * 2) as f64,
-                                    t - 1.
-                                ]
-                            }).collect();
+                            
+                            let line_points: PlotPoints = [
+                                vector[item],
+                                vector[item + 1],
+                            ].into();
+
                             plot_ui.line(Line::new(line_points));
                         }
                     }
