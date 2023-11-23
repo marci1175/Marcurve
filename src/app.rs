@@ -100,8 +100,7 @@ impl eframe::App for TemplateApp {
                                 item as f64 - (self.calc_cycles - 1 )as f64,
                                 vector[item],
                             ].into();
-
-                            plot_ui.line(Line::new(line_points).color(Color32::WHITE).stroke(Stroke::new(10., Color32::RED)).fill(100.));
+                            plot_ui.line(Line::new(line_points).color(Color32::WHITE).stroke(Stroke::new(10., Color32::RED)));
                         }
                     }
                 });

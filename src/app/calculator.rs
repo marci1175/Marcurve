@@ -160,22 +160,24 @@ impl Engine {
             while index < len {
                 if expr_list_clone[index] == Math::X {
                     expr_list_clone.remove(index);
+            
                     if num_list_clone.is_empty() {
-                        num_list_clone.push(i as f64)
+                        num_list_clone.push(i as f64);
                     } else {
                         num_list_clone.insert(index, i as f64);
                     }
-                    //update lenght
-                    len = expr_list_clone.len()
+            
+                    // Update length
+                    len = expr_list_clone.len();
                 } else if expr_list_clone[index] == Math::Pi {
                     expr_list_clone.remove(index);
                     num_list_clone.insert(index, self.pi());
                     len -= 1;
                 }
-
+            
                 if len == 0 {
                     results.push(num_list_clone[0]);
-                    continue;
+                    break;
                 }
 
                 match num_list_clone.get(index + 1) {
