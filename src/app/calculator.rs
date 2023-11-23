@@ -172,11 +172,13 @@ impl Engine {
                 } else if expr_list_clone[index] == Math::Pi {
                     expr_list_clone.remove(index);
                     num_list_clone.insert(index, self.pi());
-                    len -= 1;
+                    len = expr_list_clone.len();
                 }
             
                 if len == 0 {
                     results.push(num_list_clone[0]);
+                    dbg!(num_list_clone.clone());
+                    dbg!(expr_list_clone.clone());
                     break;
                 }
 
