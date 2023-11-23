@@ -1,6 +1,6 @@
 use std::f64::consts::TAU;
 
-use egui::{vec2, Color32, RichText, remap};
+use egui::{vec2, Color32, RichText, remap, Stroke};
 use egui_plot::{Plot, PlotPoints, Points, LineStyle, Line};
 
 use self::calculator::math_eng_init;
@@ -97,11 +97,11 @@ impl eframe::App for TemplateApp {
                         for item in 0..vector.len() - 1 {
                             
                             let line_points: PlotPoints = [
+                                item as f64 - (self.calc_cycles - 1 )as f64,
                                 vector[item],
-                                vector[item + 1],
                             ].into();
 
-                            plot_ui.line(Line::new(line_points));
+                            plot_ui.line(Line::new(line_points).color(Color32::WHITE).stroke(Stroke::new(10., Color32::RED)).fill(100.));
                         }
                     }
                 });
