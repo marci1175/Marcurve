@@ -1,5 +1,7 @@
-use egui::{vec2, Color32, RichText};
-use egui_plot::{Plot, PlotPoints, Points};
+use std::f64::consts::TAU;
+
+use egui::{vec2, Color32, RichText, remap};
+use egui_plot::{Plot, PlotPoints, Points, LineStyle, Line};
 
 use self::calculator::math_eng_init;
 
@@ -13,8 +15,7 @@ pub struct TemplateApp {
     user_equation: String,
     #[serde(skip)]
     math_output: String,
-    #[serde(skip)]
-    equation_vec: Vec<f64>,
+    equation_vec: Option<Vec<f64>>,
 }
 
 impl Default for TemplateApp {
@@ -24,7 +25,7 @@ impl Default for TemplateApp {
             calc_step: 1.,
             user_equation: String::new(),
             math_output: String::new(),
-            equation_vec: Vec::new(),
+            equation_vec: None,
         }
     }
 }
@@ -72,9 +73,9 @@ impl eframe::App for TemplateApp {
 
                 ui.group(|ui| {
                     ui.label("Limit");
-                    ui.add(egui::Slider::new(&mut self.calc_cycles, 0..=2000));
+                    ui.add(egui::DragValue::new(&mut self.calc_cycles).clamp_range(1..=i16::MAX).speed(2));
                     ui.label("Step");
-                    ui.add(egui::Slider::new(&mut self.calc_step, 0.0..=2000.0));
+                    ui.add(egui::DragValue::new(&mut self.calc_step).clamp_range(1.0..=f32::MAX).speed(0.1));
                 })
                 .response
                 .on_hover_text("Settings for the calculation");
@@ -89,9 +90,22 @@ impl eframe::App for TemplateApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             Plot::new("main")
                 .allow_scroll(true)
+                .sharp_grid_lines(false)
                 .allow_boxed_zoom(false)
                 .show(ui, |plot_ui| {
-                    plot_ui.points(Points::new(PlotPoints::from_ys_f64(&[1.2, 2.3])).filled(true));
+                    if let Some(vector) = self.equation_vec.clone() {
+                        for item in 0..vector.len() - 1 {
+                            let line_vec = vec![[vector[item], vector[item + 1]]];
+                            let line_points: PlotPoints = (vector[item] as i64 ..=vector[item + 1] as i64).map(|i| {
+                                let t = remap(i as f64, 0.0..=(vector[item]), 0.0..=(vector[item + 1]));
+                                [
+                                    item as f64 - (self.calc_cycles * 2) as f64,
+                                    t
+                                ]
+                            }).collect();
+                            plot_ui.line(Line::new(line_points));
+                        }
+                    }
                 });
         });
     }

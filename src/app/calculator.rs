@@ -28,10 +28,8 @@ enum Math {
     //Invalid
     KurvaAnyad,
 
-    //curve 
-    X
-
-
+    //curve
+    X,
 }
 
 #[derive(Clone)]
@@ -39,7 +37,7 @@ pub struct Engine {
     buf: Vec<String>,
     num_list: Vec<f64>,
     expr_list: Vec<Math>,
-    last_answ: Vec<f64>,
+    last_answ: Option<Vec<f64>>,
     step: f32,
     max: i16,
 }
@@ -49,7 +47,7 @@ impl Default for Engine {
             buf: Vec::new(),
             num_list: Vec::new(),
             expr_list: Vec::new(),
-            last_answ: vec![0.0],
+            last_answ: None,
             step: 1.,
             max: 10,
         }
@@ -77,12 +75,9 @@ impl Engine {
                 .collect::<String>()
         );
         let _ = std::io::stdin();
-
-
     }
 
-    fn mathmain(mut self, buf : String) -> Vec<f64> {
-
+    fn mathmain(mut self, buf: String) -> Option<Vec<f64>> {
         self.expr_list.clear();
         self.num_list.clear();
 
@@ -92,11 +87,11 @@ impl Engine {
             return self.last_answ;
         } else {
             self.invalid_equation(Error::msg("Invalid equation (Empty equation)"), " ".into());
-            vec![0.0]
+            None
         }
     }
 
-    fn mathdivider(&mut self) -> Vec<f64> {
+    fn mathdivider(&mut self) -> Option<Vec<f64>> {
         for item in self.buf.clone() {
             match Engine::mathdecide(&item) {
                 Ok(ok) => self.num_list.push(ok),
@@ -132,13 +127,11 @@ impl Engine {
         }
 
         //finsihed sorting the 2 vectors
-        if !(self.expr_list.is_empty() && self.num_list.is_empty()){
-            return self.mathengine()
+        if !(self.expr_list.is_empty() && self.num_list.is_empty()) && !self.expr_list.iter().any(|f| *f == Math::KurvaAnyad) {
+            return self.mathengine();
+        } else {
+            None
         }
-        else {
-            vec![0.0]
-        }
-
     }
 
     fn mathdecide(token: &str) -> anyhow::Result<f64> {
@@ -148,29 +141,36 @@ impl Engine {
     }
     // turn off safe rust compiler
     #[allow(unused_assignments)]
-    fn mathengine(&mut self) -> Vec<f64> {     
+    fn mathengine(&mut self) -> Option<Vec<f64>> {
         let mut len: usize = self.expr_list.len();
         let mut index = 0;
 
         let mut results: Vec<f64> = Vec::new();
-        let mut i : f32 = 0.0;
+        let mut i: f32 = -self.max as f32;
 
         while i <= self.max.into() {
-
-            i += self.step;            
+            i += self.step;
 
             index = 0;
 
             let mut expr_list_clone = self.expr_list.clone();
             let mut num_list_clone = self.num_list.clone();
             len = expr_list_clone.len();
-            
+
             while index < len {
                 if expr_list_clone[index] == Math::X {
                     expr_list_clone.remove(index);
-                    num_list_clone.insert(index, i as f64);
+                    if num_list_clone.is_empty() {
+                        num_list_clone.push(i as f64)
+                    } else {
+                        num_list_clone.insert(index, i as f64);
+                    }
                     //update lenght
-                    len = expr_list_clone.len();
+                    len = expr_list_clone.len()
+                } else if expr_list_clone[index] == Math::Pi {
+                    expr_list_clone.remove(index);
+                    num_list_clone.insert(index, self.pi());
+                    len -= 1;
                 }
 
                 if len == 0 {
@@ -179,29 +179,26 @@ impl Engine {
                 }
 
                 match num_list_clone.get(index + 1) {
-                    Some(_) => {
-                        
-                    }
-                    None => { if expr_list_clone.is_empty() {
+                    Some(_) => {}
+                    None => {
                         break;
-                    } }
+                    }
                 }
+                
                 if len == 0 {
-                    break;  
+                    break;
                 }
+
+                index = 0;
                 if expr_list_clone[index] == Math::Multiplication {
-                    let result = self.multiplication(num_list_clone[index], num_list_clone[index + 1]);
+                    let result =
+                        self.multiplication(num_list_clone[index], num_list_clone[index + 1]);
                     expr_list_clone.remove(index);
                     num_list_clone.remove(index);
                     num_list_clone.remove(index);
                     num_list_clone.insert(index, result);
                     len -= 1;
-                } else if expr_list_clone[index] == Math::Pi {
-                    expr_list_clone.remove(index);
-                    num_list_clone.insert(index, self.pi());
-                    len -= 1;
-                }
-                else if expr_list_clone[index] == Math::Divide {
+                } else if expr_list_clone[index] == Math::Divide {
                     let result = self.divide(num_list_clone[index], num_list_clone[index + 1]);
                     expr_list_clone.remove(index);
                     num_list_clone.remove(index);
@@ -212,13 +209,19 @@ impl Engine {
                     index += 1;
                 }
             }
+
             index = 0;
             while index < len {
                 match num_list_clone.get(index + 1) {
-                    Some(_) => {
-                        
+                    Some(_) => {}
+                    None => {
+                        if expr_list_clone
+                            .iter()
+                            .any(|f| *f == Math::Power || *f == Math::Log) || num_list_clone.is_empty()
+                        {
+                            break;
+                        }
                     }
-                    None => { break; }
                 }
                 if expr_list_clone[index] == Math::Power {
                     let result = self.power(num_list_clone[index], num_list_clone[index + 1]);
@@ -281,24 +284,17 @@ impl Engine {
                     num_list_clone.remove(index);
                     num_list_clone.insert(index, result);
                     len -= 1;
-                } else if expr_list_clone[index] == Math::Abs {
-                    let result = self.sroot(num_list_clone[index]);
-                    expr_list_clone.remove(index);
-                    num_list_clone.remove(index);
-                    num_list_clone.insert(index, result);
-                    len -= 1;
-                }
-                else {
+                } else {
                     index += 1;
                 }
             }
             index = 0;
             while index < len {
                 match num_list_clone.get(index + 1) {
-                    Some(_) => {
-                        
+                    Some(_) => {}
+                    None => {
+                        break;
                     }
-                    None => { break; }
                 }
                 if expr_list_clone[index] == Math::Addition {
                     let result = self.addition(num_list_clone[index], num_list_clone[index + 1]);
@@ -314,6 +310,12 @@ impl Engine {
                     num_list_clone.remove(index);
                     num_list_clone.insert(index, result);
                     len -= 1;
+                } else if expr_list_clone[index] == Math::Abs {
+                    let result = self.abs(num_list_clone[index]);
+                    expr_list_clone.remove(index);
+                    num_list_clone.remove(index);
+                    num_list_clone.insert(index, result);
+                    len -= 1;
                 } else {
                     index += 1;
                 }
@@ -322,14 +324,20 @@ impl Engine {
                 Some(_) => {
                     results.push(num_list_clone[0]);
                 }
-                None => { break; }
+                None => {
+                    break;
+                }
             }
-            
+            index = 0
         }
 
-        results
+        if results.is_empty() {
+            None
+        }
+        else {
+            Some(results)
+        }
     }
-
 }
 impl Engine {
     fn multiplication(&self, num1: f64, num2: f64) -> f64 {
@@ -390,6 +398,13 @@ impl Engine {
     }
 }
 
-pub fn math_eng_init(input : String, step : f32, max : i16) -> Vec<f64> {
-    Engine::mathmain(Engine { step: step, max: max, ..Default::default() }, input)
+pub fn math_eng_init(input: String, step: f32, max: i16) -> Option<Vec<f64>> {
+    Engine::mathmain(
+        Engine {
+            step: step,
+            max: max,
+            ..Default::default()
+        },
+        input,
+    )
 }
