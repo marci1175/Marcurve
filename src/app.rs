@@ -1,27 +1,28 @@
-use std::f64::consts::TAU;
+use egui::{remap, vec2, Color32, RichText, Stroke};
+use egui_plot::{Line, LineStyle, Plot, PlotPoints, Points};
 
-use egui::{vec2, Color32, RichText, remap, Stroke};
-use egui_plot::{Plot, PlotPoints, Points, LineStyle, Line};
+use self::calculator2::{Calculator, Coordinates};
 
-use self::calculator::math_eng_init;
+//use self::calculator::math_eng_init;
 
-mod calculator;
+mod calculator2;
 
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
 pub struct TemplateApp {
-    calc_cycles: i16,
+    calc_cycles: f32,
     calc_step: f32,
     user_equation: String,
     #[serde(skip)]
     math_output: String,
-    equation_vec: Option<Vec<f64>>,
+    #[serde(skip)]
+    equation_vec: Option<Vec<Coordinates>>,
 }
 
 impl Default for TemplateApp {
     fn default() -> Self {
         Self {
-            calc_cycles: 10,
+            calc_cycles: 10.,
             calc_step: 1.,
             user_equation: String::new(),
             math_output: String::new(),
@@ -73,19 +74,36 @@ impl eframe::App for TemplateApp {
 
                 ui.group(|ui| {
                     ui.label("Limit");
-                    ui.add(egui::DragValue::new(&mut self.calc_cycles).clamp_range(1..=i16::MAX).speed(2));
+                    ui.add(
+                        egui::DragValue::new(&mut self.calc_cycles)
+                            .clamp_range(1.0..=f32::MAX)
+                            .speed(2),
+                    );
                     ui.label("Step");
-                    ui.add(egui::DragValue::new(&mut self.calc_step).clamp_range(1.0..=f32::MAX).speed(0.1));
+                    ui.add(
+                        egui::DragValue::new(&mut self.calc_step)
+                            .clamp_range(1.0..=f32::MAX)
+                            .speed(0.1),
+                    );
                 })
                 .response
                 .on_hover_text("Settings for the calculation");
 
                 //call calculator on every change
-                if temp_string_size != self.user_equation.len() || temp_cyc_size != self.calc_cycles || temp_step_size != self.calc_step  {
-                    self.equation_vec = math_eng_init(self.user_equation.clone(), self.calc_step.clone(), self.calc_cycles.clone());
+                if temp_string_size != self.user_equation.len()
+                    || temp_cyc_size != self.calc_cycles
+                    || temp_step_size != self.calc_step
+                {
+                    //self.equation_vec = math_eng_init(self.user_equation.clone(), self.calc_step.clone(), self.calc_cycles.clone());
+                    self.equation_vec = Calculator::init(&mut Calculator {
+                        buf: self.user_equation.clone(),
+                        bounds: self.calc_cycles,
+                        step: self.calc_step,
+                        ..Default::default()
+                    } );
                 }
             });
-        dbg!(self.equation_vec.clone());
+        //dbg!(self.equation_vec.clone());
         //Main, display curve
         egui::CentralPanel::default().show(ctx, |ui| {
             Plot::new("main")
@@ -94,13 +112,14 @@ impl eframe::App for TemplateApp {
                 .allow_boxed_zoom(false)
                 .show(ui, |plot_ui| {
                     if let Some(vector) = self.equation_vec.clone() {
-                        for item in 0..vector.len() - 1 {
-                            
-                            let line_points: PlotPoints = [
-                                item as f64 - (self.calc_cycles - 1 )as f64,
-                                vector[item],
-                            ].into();
-                            plot_ui.line(Line::new(line_points).color(Color32::WHITE).stroke(Stroke::new(10., Color32::RED)));
+                        for item in 0..vector.len() {
+                            let line_points: PlotPoints =
+                                [vector[item][0], vector[item][1]].into();
+                            plot_ui.line(
+                                Line::new(line_points)
+                                    .color(Color32::WHITE)
+                                    .stroke(Stroke::new(10., Color32::RED)),
+                            );
                         }
                     }
                 });

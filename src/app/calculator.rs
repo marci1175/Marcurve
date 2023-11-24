@@ -1,4 +1,5 @@
 use anyhow::{self, Error};
+use eframe::glow::ACTIVE_RESOURCES;
 
 #[derive(Clone, Debug, PartialEq)]
 enum Math {
@@ -177,8 +178,6 @@ impl Engine {
             
                 if len == 0 {
                     results.push(num_list_clone[0]);
-                    dbg!(num_list_clone.clone());
-                    dbg!(expr_list_clone.clone());
                     break;
                 }
 
@@ -325,8 +324,10 @@ impl Engine {
                 }
             }
             match num_list_clone.get(0) {
-                Some(_) => {
-                    results.push(num_list_clone[0]);
+                Some(num) => {
+                    dbg!(num_list_clone.clone());
+                    results.push(*num);
+                    dbg!(results.clone());
                 }
                 None => {
                     break;
@@ -334,7 +335,7 @@ impl Engine {
             }
             index = 0
         }
-
+        //dbg!(results.clone());
         if results.is_empty() {
             None
         }

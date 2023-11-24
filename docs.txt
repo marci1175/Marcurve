@@ -1,0 +1,23 @@
+basic coordinates [x ; y]
+
+            |
+            |
+            |
+            |
+            |
+            |
+------------------------X
+            |
+            |
+            |
+            |
+            |
+            |
+            Y
+
+What the calculator returns: 
+ ::::: Some([[x; y], [x; y], [x; y]]) :::::
+
+test:
+
+    max 10 =>       -10 - 0 - 10
