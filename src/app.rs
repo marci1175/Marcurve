@@ -82,8 +82,8 @@ impl eframe::App for TemplateApp {
                     ui.label("Step");
                     ui.add(
                         egui::DragValue::new(&mut self.calc_step)
-                            .clamp_range(1.0..=f32::MAX)
-                            .speed(0.1),
+                            .clamp_range(0.01..=f32::MAX)
+                            .speed(0.01),
                     );
                 })
                 .response
@@ -114,6 +114,7 @@ impl eframe::App for TemplateApp {
                     if let Some(vector) = self.equation_vec.clone() {
                         for item in 0..vector.len() {
                             let line_points: PlotPoints =
+                                //x                 y
                                 [vector[item][0], vector[item][1]].into();
                             plot_ui.line(
                                 Line::new(line_points)

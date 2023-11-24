@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 #[derive(Clone, Debug, PartialEq)]
 pub struct Coordinates {
     x: f64,
@@ -15,11 +14,9 @@ impl Index<usize> for Coordinates {
     fn index(&self, index: usize) -> &Self::Output {
         if index == 0 {
             return &self.x;
-        }
-        else if index == 1 {
+        } else if index == 1 {
             return &self.y;
-        }
-        else {
+        } else {
             panic!("Painced at Coordinate indexing, index out ofr range (x ; y)");
         }
     }
@@ -55,12 +52,13 @@ enum Math {
 pub struct Calculator {
     pub buf: String,
     pub num_buf: Vec<f64>,
+    #[allow(private_interfaces)]
     pub expr_buf: Vec<Math>,
     pub bounds: f32,
     pub step: f32,
 
     //  ::::  Option of vector of coordinates  :::: -> Some(Vec < [0;0] >)
-    pub output: Option<Vec<Coordinates>>
+    pub output: Option<Vec<Coordinates>>,
 }
 impl Default for Calculator {
     fn default() -> Self {
@@ -76,7 +74,7 @@ impl Default for Calculator {
     }
 }
 
-use std::{f64::consts::PI, ops::Index};
+use std::{f64::consts::PI, ops::Index, f32::consts::E};
 
 use anyhow::{self, Error};
 
@@ -139,7 +137,6 @@ impl Calculator {
     }
 }
 impl Calculator {
-
     fn mathdecide(&self, token: &str) -> anyhow::Result<f64> {
         let token = token.parse::<f64>()?;
 
@@ -153,35 +150,31 @@ impl Calculator {
                 Ok(num) => {
                     self.num_buf.push(num);
                 }
-                Err(_) => {
-                    self.expr_buf.push(
-                        match item.to_lowercase().as_str() {
-                            "+" => Math::Addition,
-                            "-" => Math::Subtraction,
-                            "*" => Math::Multiplication,
-                            "/" | "%" | ":" => Math::Divide,
-                            "^" | "pow" | "**" => Math::Power,
-                            "cos" => Math::Cos,
-                            "tan" => Math::Tan,
-                            "sin" => Math::Sin,
-                            "rad" => Math::Rad,
-                            "log" => Math::Log,
-                            "!" => Math::Fact,
-                            "ln" => Math::Ln,
-                            "croot" => Math::CRoot,
-                            "sroot" => Math::SRoot,
-                            "ans" | "answ" => Math::Answ,
-                            "pi" => Math::Pi,
-                            "x" => Math::X,
-                            "abs" => Math::Abs,
-                            _ => {
-                                return None;
-                            }
-                        }
-                    )
-                }
+                Err(_) => self.expr_buf.push(match item.to_lowercase().as_str() {
+                    "+" => Math::Addition,
+                    "-" => Math::Subtraction,
+                    "*" => Math::Multiplication,
+                    "/" | "%" | ":" => Math::Divide,
+                    "^" | "pow" | "**" => Math::Power,
+                    "cos" => Math::Cos,
+                    "tan" => Math::Tan,
+                    "sin" => Math::Sin,
+                    "rad" => Math::Rad,
+                    "log" => Math::Log,
+                    "!" => Math::Fact,
+                    "ln" => Math::Ln,
+                    "croot" => Math::CRoot,
+                    "sroot" => Math::SRoot,
+                    "ans" | "answ" => Math::Answ,
+                    "pi" => Math::Pi,
+                    "x" => Math::X,
+                    "abs" => Math::Abs,
+                    _ => {
+                        return None;
+                    }
+                }),
             }
-        };
+        }
         //finished sorting
         self.calculate()
     }
@@ -193,9 +186,7 @@ impl Calculator {
         let mut partial_result: Vec<f64> = Vec::new();
         let mut partial_coords: Vec<f64> = Vec::new();
         while x < self.bounds {
-            
             //make local clone so it can be used for X
-
             //This vector is the clone of the sorted user input
             let mut num_list_clone = self.num_buf.clone();
             let mut expr_list_clone = self.expr_buf.clone();
@@ -203,39 +194,189 @@ impl Calculator {
             //inceremnt by step
             x += self.step;
 
-            for (index, item) in expr_list_clone.clone().iter().enumerate() {
-                match item {
-                    Math::X => { expr_list_clone.remove(index); num_list_clone.insert(index, x as f64) }
-                    Math::Pi => { expr_list_clone.remove(index); num_list_clone.insert(index, PI) }
-                    _ => continue
-                }    
-            };
-            //x ^ 2
-
-            for (index, item) in expr_list_clone.clone().iter().enumerate() {
-                match num_list_clone.get(index + 1){
-                    Some(_) => {},
-                    None => break
+            let mut expr_len = expr_list_clone.len();
+            let mut index = 0;
+            while expr_len > index {
+                match expr_list_clone[index] {
+                    Math::X => {
+                        expr_list_clone.remove(index);
+                        if num_list_clone.is_empty() {
+                            num_list_clone.push(x as f64)
+                        }
+                        else {
+                            num_list_clone.insert(index, x as f64);
+                        }
+                        expr_len = expr_list_clone.len();
+                        continue;
+                    }
+                    Math::Pi => {
+                        expr_list_clone.remove(index);
+                        num_list_clone.insert(index, PI);
+                        expr_len = expr_list_clone.len();
+                        continue;
+                    }
+                    _ => {}
                 }
-                match item {
+                
+                index += 1;
+            }
+
+            let expr_len = expr_list_clone.len();
+            let mut index = 0;
+            while expr_len > index {
+                match num_list_clone.get(index + 1) {
+                    Some(_) => {}
+                    None => break,
+                }
+                match expr_list_clone[index] {
                     Math::Multiplication => {
                         expr_list_clone.remove(index);
-                        let result = self.multiplication(num_list_clone[index], num_list_clone[index + 1]);
+                        let result =
+                            self.multiplication(num_list_clone[index], num_list_clone[index + 1]);
                         num_list_clone.remove(index);
                         num_list_clone.remove(index);
                         num_list_clone.insert(index, result);
-                        dbg!(result);
+                        continue;
                     }
                     Math::Divide => {
                         expr_list_clone.remove(index);
-                        let result = self.divide(num_list_clone[index], num_list_clone[index + 1]);
+                        let result =
+                            self.divide(num_list_clone[index], num_list_clone[index + 1]);
                         num_list_clone.remove(index);
                         num_list_clone.remove(index);
                         num_list_clone.insert(index, result);
-                        dbg!(result);
+                        continue;
                     }
-                    _ => continue
+                    _ => {}
                 }
+                index += 1;
+            }
+
+            let expr_len = expr_list_clone.len();
+            let mut index = 0;
+            while expr_len > index {
+                match num_list_clone.get(index + 1) {
+                    Some(_) => {}
+                    None => {break}
+                }
+                match expr_list_clone[index] {
+                    Math::Addition => {
+                        let result = self.addition(num_list_clone[index], num_list_clone[index + 1]);
+                        expr_list_clone.remove(index);
+                        num_list_clone.remove(index);
+                        num_list_clone.remove(index);
+                        num_list_clone.insert(index, result);
+                        continue;
+                    }
+                    Math::Subtraction => {
+                        let result = self.subtraction(num_list_clone[index], num_list_clone[index + 1]);
+                        expr_list_clone.remove(index);
+                        num_list_clone.remove(index);
+                        num_list_clone.remove(index);
+                        num_list_clone.insert(index, result);
+                        continue;
+                    }
+                    _ => {}
+                }
+                index += 1;
+            }
+
+            let expr_len = expr_list_clone.len();
+            let mut index = 0;
+            while expr_len > index {
+                match num_list_clone.get(index + 1) {
+                    Some(_) => {}
+                    None => {
+                        if expr_list_clone
+                            .iter()
+                            .any(|f| *f == Math::Power || *f == Math::Log) || num_list_clone.is_empty() || expr_list_clone.is_empty()
+                        {
+                            break;
+                        }
+                    }
+                }
+                match expr_list_clone[index] {
+                    Math::Power => {
+                        let result = self.power(num_list_clone[index], num_list_clone[index + 1]);
+                        expr_list_clone.remove(index);
+                        num_list_clone.remove(index);
+                        num_list_clone.remove(index);
+                        num_list_clone.insert(index, result);
+                        continue;
+                    }
+                    Math::Abs => {
+                        let result = self.abs(num_list_clone[index]);
+                        expr_list_clone.remove(index);
+                        num_list_clone.remove(index);
+                        num_list_clone.insert(index, result);
+                        continue;
+                    }
+                    Math::Fact => {
+                        let result = self.fact(num_list_clone[index]);
+                        expr_list_clone.remove(index);
+                        num_list_clone.remove(index);
+                        num_list_clone.insert(index, result);
+                        continue;
+                    }
+                    Math::Cos => {
+                        let result = self.cos(num_list_clone[index]);
+                        expr_list_clone.remove(index);
+                        num_list_clone.remove(index);
+                        num_list_clone.insert(index, result);
+                        continue;
+                    }
+                    Math::Log => {
+                        let result = self.log(num_list_clone[index], num_list_clone[index + 1]);
+                        expr_list_clone.remove(index);
+                        num_list_clone.remove(index);
+                        num_list_clone.insert(index, result);
+                        continue;
+                    }
+                    Math::Tan => {
+                        let result = self.tan(num_list_clone[index]);
+                        expr_list_clone.remove(index);
+                        num_list_clone.remove(index);
+                        num_list_clone.insert(index, result);
+                        continue;
+                    }
+                    Math::Sin => {
+                        let result = self.sin(num_list_clone[index]);
+                        expr_list_clone.remove(index);
+                        num_list_clone.remove(index);
+                        num_list_clone.insert(index, result);
+                        continue;
+                    }
+                    Math::Rad => {
+                        let result = self.rad(num_list_clone[index]);
+                        expr_list_clone.remove(index);
+                        num_list_clone.remove(index);
+                        num_list_clone.insert(index, result);
+                        continue;
+                    }
+                    Math::CRoot => {
+                        let result = self.croot(num_list_clone[index]);
+                        expr_list_clone.remove(index);
+                        num_list_clone.remove(index);
+                        num_list_clone.insert(index, result);
+                        continue;
+                    }
+                    Math::SRoot => {
+                        let result = self.sroot(num_list_clone[index]);
+                        expr_list_clone.remove(index);
+                        num_list_clone.remove(index);
+                        num_list_clone.insert(index, result);
+                        continue;
+                    }
+                    Math::Ln => {
+                        let result = self.ln(num_list_clone[index]);
+                        expr_list_clone.remove(index);
+                        num_list_clone.remove(index);
+                        num_list_clone.insert(index, result);
+                        continue;
+                    }
+                    _ => {}
+                }
+                index += 1;
             }
 
             //back up last saved data
@@ -243,25 +384,24 @@ impl Calculator {
                 Some(num) => {
                     partial_result.push(*num);
                     partial_coords.push(x as f64);
-                },
-                None => {},
+                }
+                None => {}
             }
         }
 
         let mut wrapped_result: Vec<Coordinates> = Vec::new();
 
-
         //expect self.max == partial_result.len()
         //-10 .. 10
-        for (index ,num) in partial_result.iter().enumerate() {
+        for (index, num) in partial_result.iter().enumerate() {
             wrapped_result.push(Coordinates::wrap_coordinates(partial_coords[index], *num))
-        };
+        }
 
         Some(wrapped_result)
     }
 
     pub fn init(&mut self) -> Option<Vec<Coordinates>> {
-        let eredmeny = self.sort();        
+        let eredmeny = self.sort();
         return eredmeny;
     }
 }

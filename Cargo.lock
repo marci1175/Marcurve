@@ -3,6 +3,21 @@
 version = 3
 
 [[package]]
+name = "Marcurve"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "eframe",
+ "egui",
+ "egui_extras",
+ "egui_plot",
+ "env_logger",
+ "log",
+ "serde",
+ "wasm-bindgen-futures",
+]
+
+[[package]]
 name = "ab_glyph"
 version = "0.2.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -824,21 +839,6 @@ dependencies = [
  "web-sys",
  "winapi",
  "winit",
-]
-
-[[package]]
-name = "eframe_template"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "eframe",
- "egui",
- "egui_extras",
- "egui_plot",
- "env_logger",
- "log",
- "serde",
- "wasm-bindgen-futures",
 ]
 
 [[package]]
