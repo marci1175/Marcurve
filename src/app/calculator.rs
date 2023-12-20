@@ -17,7 +17,7 @@ impl Index<usize> for Coordinates {
         } else if index == 1 {
             return &self.y;
         } else {
-            panic!("Painced at Coordinate indexing, index out ofr range (x ; y)");
+            panic!("Panicked at Coordinate indexing, index out of range (x ; y)");
         }
     }
 }
